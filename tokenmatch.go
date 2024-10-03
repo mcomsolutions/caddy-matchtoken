@@ -12,10 +12,11 @@ import (
 )
 
 // set XCADDY_DEBUG=1
-// xcaddy build --with github.com/mcomsolutions/caddy-matchtoken=C:\java\eclipse\vertx\caddy-matchtoken
+// xcaddy build --with github.com/mcomsolutions/caddy-storagessl --with github.com/mcomsolutions/caddy-matchtoken=C:\java\eclipse\vertx\caddy-matchtoken
+// .\caddy start --config caddy.json
 
 type matchToken struct {
-	Prefix string   `json:"tokenprefix"`
+	Prefix []string `json:"tokenprefix"`
 	Host   []string `json:"host"`
 }
 
@@ -59,7 +60,6 @@ func (m *matchToken) Provision(ctx caddy.Context) error {
 			return m.Host[i] < m.Host[j]
 		})
 	}
-
 	return nil
 }
 
@@ -83,7 +83,7 @@ func (m *matchToken) Match(req *http.Request) bool {
 		}
 		token = cookie.Value
 	}
-	if !strings.HasPrefix(token, m.Prefix) {
+	if !m.hasPrefix(token) {
 		return false
 	}
 	/********************************************************************************************************/
@@ -139,6 +139,19 @@ outer:
 			}
 			return true
 		} else if strings.EqualFold(reqHost, host) {
+			return true
+		}
+	}
+	return false
+}
+
+/**
+ * Verifica que el token tenga la lista de prefijos que me indican
+ * @param token El token que me mandan a evaluar
+ */
+func (m *matchToken) hasPrefix(token string) bool {
+	for v := range m.Prefix {
+		if strings.HasPrefix(token, m.Prefix[v]) {
 			return true
 		}
 	}
